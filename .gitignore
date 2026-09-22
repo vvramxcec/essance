@@ -1,0 +1,32 @@
+# Virtual environments
+venv/
+backend/venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+backend/__pycache__/
+*.py[cod]
+*$py.class
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+.npm
+
+# Environment variables
+.env
+backend/.env
+
+# Databases & local data
+*.db
+*.sqlite3
+backend/essence.db
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
