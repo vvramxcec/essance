@@ -1,11 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  ChevronDown, ChevronUp, ExternalLink, Bookmark, 
+import {
+  ChevronDown, ChevronUp, ExternalLink, Bookmark,
   Clock, Sparkles, ThumbsDown, Share2, Check
 } from 'lucide-react';
 
+// Map source names to data-source attribute for CSS color theming
+function getSourceKey(sourceName) {
+  if (!sourceName) return 'default';
+  const lower = sourceName.toLowerCase();
+  if (lower.includes('arxiv')) return 'arxiv';
+  if (lower.includes('techcrunch')) return 'techcrunch';
+  if (lower.includes('verge')) return 'verge';
+  if (lower.includes('ars')) return 'ars';
+  if (lower.includes('mit') || lower.includes('technology review')) return 'mit';
+  return 'default';
+}
+
 export default function ArticleCard({
   article,
+  variant = 'normal', // 'hero' | 'wide' | 'normal'
   onEntityClick,
   onBookmarkToggle,
   onDislike,
@@ -14,75 +27,78 @@ export default function ArticleCard({
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
   const startTimeRef = useRef(Date.now());
-  const cardRef = useRef(null);
 
-  // FeedRec Dwell Time measurement
   useEffect(() => {
     startTimeRef.current = Date.now();
-
     return () => {
-      const elapsedSeconds = (Date.now() - startTimeRef.current) / 1000;
-      if (elapsedSeconds >= 4 && onDwellFeedback) {
-        onDwellFeedback(article.id, elapsedSeconds);
+      const elapsed = (Date.now() - startTimeRef.current) / 1000;
+      if (elapsed >= 4 && onDwellFeedback) {
+        onDwellFeedback(article.id, elapsed);
       }
     };
   }, [article.id]);
 
   const handleShare = () => {
-    navigator.clipboard.writeText(`${article.title} - ${article.url}`);
+    navigator.clipboard.writeText(`${article.title} — ${article.url}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleSourceClick = () => {
-    const elapsedSeconds = (Date.now() - startTimeRef.current) / 1000;
-    if (onDwellFeedback) {
-      onDwellFeedback(article.id, Math.max(elapsedSeconds, 20.0), 'click');
-    }
+    const elapsed = (Date.now() - startTimeRef.current) / 1000;
+    if (onDwellFeedback) onDwellFeedback(article.id, Math.max(elapsed, 20.0), 'click');
   };
 
-  return (
-    <article 
-      ref={cardRef}
-      className={`article-card ${article.is_recommended_for_clock ? 'recommended-border' : ''}`}
-    >
-      <div className="card-meta-top">
-        <div className="source-badge-group">
-          <span className="source-pill">{article.source_name}</span>
-          <span className="category-pill">{article.category}</span>
-          {article.is_recommended_for_clock && (
-            <span style={{ 
-              fontSize: '0.68rem', 
-              color: 'var(--primary)', 
-              fontWeight: 700, 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '3px' 
-            }}>
-              <Sparkles size={11} /> Recommended
-            </span>
-          )}
-        </div>
+  const sourceKey = getSourceKey(article.source_name);
+  const isHero = variant === 'hero';
+  const isWide = variant === 'wide';
 
-        <div className="read-time-pill" title="Estimated reading time">
-          <Clock size={12} />
-          <span>{article.read_time_seconds || 35}s read</span>
+  const cardClass = [
+    'article-card',
+    isHero ? 'hero' : '',
+    isWide ? 'wide' : ''
+  ].filter(Boolean).join(' ');
+
+  return (
+    <article
+      className={cardClass}
+      data-source={isHero ? undefined : sourceKey}
+    >
+      {/* Meta Top */}
+      <div className="card-source-label">
+        <span>{article.source_name}</span>
+        <span style={{ opacity: 0.5 }}>·</span>
+        <span>{article.category}</span>
+        {article.is_recommended_for_clock && (
+          <>
+            <span style={{ opacity: 0.5 }}>·</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <Sparkles size={10} /> Recommended
+            </span>
+          </>
+        )}
+        <div style={{ marginLeft: 'auto' }}>
+          <span className="read-time-pill">
+            <Clock size={10} />
+            {article.read_time_seconds || 35}s
+          </span>
         </div>
       </div>
 
-      <h3 className="article-title">{article.title}</h3>
+      {/* Title */}
+      <h2 className="article-title">{article.title}</h2>
 
       {/* XSum Extreme Summary (BLUF) */}
       <div className="extreme-summary-box">
         <div className="extreme-summary-label">
-          <Sparkles size={12} />
-          <span>Bottom Line (XSum)</span>
+          <Sparkles size={10} />
+          <span>Essence</span>
         </div>
         <p className="extreme-summary-text">{article.extreme_summary}</p>
       </div>
 
       {/* Expandable Key Takeaways */}
-      {expanded && article.bullet_points && article.bullet_points.length > 0 && (
+      {expanded && article.bullet_points?.length > 0 && (
         <div className="takeaways-wrapper">
           <ul className="takeaways-list">
             {article.bullet_points.map((pt, i) => (
@@ -96,13 +112,13 @@ export default function ArticleCard({
       )}
 
       {/* LKPNR Entity Chips */}
-      {article.entities && article.entities.length > 0 && (
+      {article.entities?.length > 0 && (
         <div className="entity-chips-row">
           {article.entities.map((entity, i) => (
             <button
               key={i}
               className="entity-chip"
-              onClick={() => onEntityClick && onEntityClick(entity)}
+              onClick={() => onEntityClick?.(entity)}
             >
               #{entity}
             </button>
@@ -110,57 +126,52 @@ export default function ArticleCard({
         </div>
       )}
 
-      {/* Card Action Controls */}
+      {/* Card Actions */}
       <div className="card-actions-bar">
-        <button 
+        <button
           className="btn-toggle-bullets"
           onClick={() => setExpanded(!expanded)}
         >
-          {expanded ? (
-            <>Less detail <ChevronUp size={15} /></>
-          ) : (
-            <>3 Key Takeaways <ChevronDown size={15} /></>
-          )}
+          {expanded
+            ? <><ChevronUp size={14} /> Less</>
+            : <><ChevronDown size={14} /> 3 Takeaways</>
+          }
         </button>
 
         <div className="action-buttons-group">
-          <button 
+          <button
             className={`action-btn ${article.is_bookmarked ? 'active' : ''}`}
             onClick={() => onBookmarkToggle(article.id, article.is_bookmarked)}
-            title={article.is_bookmarked ? "Remove bookmark" : "Save for exams/research"}
+            title={article.is_bookmarked ? "Remove bookmark" : "Save"}
           >
-            <Bookmark size={13} fill={article.is_bookmarked ? "currentColor" : "none"} />
-            <span>{article.is_bookmarked ? "Saved" : "Save"}</span>
+            <Bookmark size={12} fill={article.is_bookmarked ? "currentColor" : "none"} />
+            {article.is_bookmarked ? "Saved" : "Save"}
           </button>
 
-          <button 
-            className="action-btn"
-            onClick={handleShare}
-            title="Copy link"
-          >
-            {copied ? <Check size={13} color="var(--accent-emerald)" /> : <Share2 size={13} />}
-            <span>{copied ? "Copied" : "Share"}</span>
+          <button className="action-btn" onClick={handleShare} title="Copy link">
+            {copied
+              ? <Check size={12} />
+              : <Share2 size={12} />
+            }
           </button>
 
-          <button 
+          <button
             className="action-btn danger"
             onClick={() => onDislike(article.id)}
-            title="Less like this (dislike/hide)"
+            title="Less like this"
           >
-            <ThumbsDown size={13} />
+            <ThumbsDown size={12} />
           </button>
 
-          <a 
+          <a
             href={article.url}
             target="_blank"
             rel="noopener noreferrer"
             className="action-btn"
             onClick={handleSourceClick}
             style={{ textDecoration: 'none' }}
-            title="Open original publication"
           >
-            <span>Source</span>
-            <ExternalLink size={12} />
+            Source <ExternalLink size={11} />
           </a>
         </div>
       </div>

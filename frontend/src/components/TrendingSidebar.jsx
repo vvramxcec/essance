@@ -1,110 +1,164 @@
 import React from 'react';
-import { TrendingUp, BookOpen, Brain, Zap, Hash } from 'lucide-react';
+import { TrendingUp, BookOpen, Brain, Zap, Hash, ExternalLink } from 'lucide-react';
 
 export default function TrendingSidebar({
   trendingEntities,
   selectedEntity,
   onSelectEntity,
   stats,
+  recentArticles,
   arxivPapers
 }) {
   return (
     <aside className="sidebar-wrapper">
-      {/* Student Cognitive Impact */}
+
+      {/* ── Cognitive Impact Stats (Discover sidebar widget style) ── */}
       <div className="sidebar-box">
         <h4 className="sidebar-title">
-          <Zap size={17} color="var(--accent-amber)" />
-          <span>Cognitive Impact</span>
+          <Zap size={14} color="var(--accent-amber)" />
+          Your Digest
         </h4>
         <div className="stats-grid">
           <div className="stat-card">
             <div className="stat-number">{stats?.total_articles || 40}</div>
-            <div className="stat-label">AI Summaries</div>
+            <div className="stat-label">Summaries</div>
           </div>
           <div className="stat-card">
-            <div className="stat-number">~{stats?.estimated_reading_minutes_saved || '2.8'}h</div>
-            <div className="stat-label">Time Saved</div>
+            <div className="stat-number">{stats?.saved_count || 0}</div>
+            <div className="stat-label">Saved</div>
           </div>
         </div>
-        <p style={{ 
-          fontSize: '0.74rem', 
-          color: 'var(--text-muted)', 
-          marginTop: '12px', 
-          lineHeight: '1.4' 
+        <p style={{
+          fontSize: '0.72rem',
+          color: 'var(--text-muted)',
+          marginTop: 12,
+          lineHeight: 1.5
         }}>
-          💡 <strong>Attention Span Study:</strong> Micro-summaries (under 40s) preserve 92% of salient concepts while preventing cognitive fatigue.
+          ≈ <strong style={{ color: 'var(--text-main)' }}>
+            {Math.round((stats?.total_articles || 40) * 4.2)}min
+          </strong> of reading distilled into bite-sized essences.
         </p>
       </div>
 
-      {/* Trending Concept Cloud (LKPNR) */}
+      {/* ── Recent Articles (Discover right-panel list style) ── */}
+      {recentArticles?.length > 0 && (
+        <div className="sidebar-box">
+          <h4 className="sidebar-title">
+            <BookOpen size={14} color="var(--primary)" />
+            Recent
+          </h4>
+          <div className="recent-list">
+            {recentArticles.map((article) => (
+              <a
+                key={article.id}
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="recent-item"
+                style={{ textDecoration: 'none' }}
+              >
+                <span className="recent-item-source">{article.source_name}</span>
+                <span className="recent-item-title">{article.title}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Trending Concepts (LKPNR Knowledge Graph) ── */}
       <div className="sidebar-box">
         <h4 className="sidebar-title">
-          <TrendingUp size={17} color="var(--primary)" />
-          <span>Trending Concepts</span>
+          <TrendingUp size={14} color="var(--accent-emerald)" />
+          Trending Concepts
         </h4>
-        <div className="concept-cloud">
-          {selectedEntity && (
+
+        {selectedEntity && (
+          <div style={{ marginBottom: 10 }}>
             <button
               className="concept-tag"
               onClick={() => onSelectEntity(null)}
-              style={{ background: 'var(--primary)', color: 'white' }}
+              style={{ background: 'var(--primary)', color: 'white', border: 'none' }}
             >
-              <span>✕ Clear filter: #{selectedEntity}</span>
+              ✕ #{selectedEntity}
             </button>
-          )}
+          </div>
+        )}
 
-          {trendingEntities && trendingEntities.map((item, idx) => (
+        <div className="concept-cloud">
+          {trendingEntities?.map((item, idx) => (
             <button
               key={idx}
-              className={`concept-tag ${selectedEntity === item.name ? 'selected' : ''}`}
-              onClick={() => onSelectEntity(item.name === selectedEntity ? null : item.name)}
+              className="concept-tag"
+              onClick={() => onSelectEntity(item.name)}
+              style={selectedEntity === item.name ? {
+                background: 'var(--primary)',
+                color: 'white',
+                borderColor: 'var(--primary)'
+              } : {}}
             >
-              <Hash size={11} color="var(--text-muted)" />
-              <span>{item.name}</span>
+              <Hash size={10} />
+              {item.name}
               <span className="concept-count">{item.count}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* ArXiv Academic Research Spotlight */}
-      {arxivPapers && arxivPapers.length > 0 && (
+      {/* ── ArXiv Research Spotlight ── */}
+      {arxivPapers?.length > 0 && (
         <div className="sidebar-box">
           <h4 className="sidebar-title">
-            <Brain size={17} color="var(--accent-purple)" />
-            <span>ArXiv Breakthroughs</span>
+            <Brain size={14} color="var(--accent-purple)" />
+            ArXiv Spotlight
           </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {arxivPapers.slice(0, 3).map((paper) => (
-              <div 
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {arxivPapers.slice(0, 4).map((paper) => (
+              <a
                 key={paper.id}
+                href={paper.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
-                  borderLeft: '2px solid var(--accent-purple)',
-                  paddingLeft: '10px'
+                  display: 'flex',
+                  gap: 10,
+                  textDecoration: 'none',
+                  alignItems: 'flex-start'
                 }}
               >
-                <a
-                  href={paper.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    color: 'var(--text-main)',
-                    textDecoration: 'none',
+                <div style={{
+                  width: 3,
+                  flexShrink: 0,
+                  alignSelf: 'stretch',
+                  borderRadius: 2,
+                  background: 'var(--card-arxiv-fg)',
+                  minHeight: 36
+                }} />
+                <div>
+                  <span style={{
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
-                    lineHeight: '1.3'
-                  }}
-                >
-                  {paper.title}
-                </a>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                  {paper.source_name} • {paper.read_time_seconds || 45}s read
-                </span>
-              </div>
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    color: 'var(--text-main)',
+                    lineHeight: 1.35
+                  }}>
+                    {paper.title}
+                  </span>
+                  <div style={{
+                    fontSize: '0.66rem',
+                    color: 'var(--text-muted)',
+                    marginTop: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}>
+                    {paper.read_time_seconds || 45}s read
+                    <ExternalLink size={10} />
+                  </div>
+                </div>
+              </a>
             ))}
           </div>
         </div>

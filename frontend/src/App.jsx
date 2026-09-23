@@ -3,7 +3,7 @@ import Navbar from './components/Navbar';
 import InterestClockBanner from './components/InterestClockBanner';
 import ArticleCard from './components/ArticleCard';
 import TrendingSidebar from './components/TrendingSidebar';
-import { Bookmark, Sparkles, AlertCircle } from 'lucide-react';
+import { Bookmark, AlertCircle } from 'lucide-react';
 
 const CATEGORIES = ["All", "Research", "Industry", "Deep Tech", "Tech News"];
 
@@ -22,12 +22,10 @@ export default function App() {
   const [trendingEntities, setTrendingEntities] = useState([]);
   const [stats, setStats] = useState(null);
 
-  // Apply dark/light theme to document root
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
-  // Fetch initial Clock status and stats
   const fetchAuxData = async () => {
     try {
       const [clockRes, trendingRes, statsRes] = await Promise.all([
@@ -35,30 +33,24 @@ export default function App() {
         fetch('/api/trending'),
         fetch('/api/stats')
       ]);
-
       if (clockRes.ok) {
         const data = await clockRes.json();
         setClockStatus(data);
-        if (!activeClockMode) {
-          setActiveClockMode(data.current_mode?.key);
-        }
+        if (!activeClockMode) setActiveClockMode(data.current_mode?.key);
       }
-
       if (trendingRes.ok) {
         const data = await trendingRes.json();
         setTrendingEntities(data.trending_entities || []);
       }
-
       if (statsRes.ok) {
         const data = await statsRes.json();
         setStats(data);
       }
     } catch (err) {
-      console.error('Failed to load auxiliary data:', err);
+      console.error('Aux fetch failed:', err);
     }
   };
 
-  // Fetch Feed with active filters and current Interest Clock mode
   const fetchFeed = useCallback(async () => {
     setLoading(true);
     try {
@@ -75,100 +67,83 @@ export default function App() {
         setArticles(data.articles || []);
       }
     } catch (err) {
-      console.error('Failed to fetch feed:', err);
+      console.error('Feed fetch failed:', err);
     } finally {
       setLoading(false);
     }
   }, [searchTerm, activeCategory, selectedEntity, isBookmarkedView, activeClockMode]);
 
-  useEffect(() => {
-    fetchAuxData();
-  }, []);
+  useEffect(() => { fetchAuxData(); }, []);
+  useEffect(() => { fetchFeed(); }, [fetchFeed]);
 
-  useEffect(() => {
-    fetchFeed();
-  }, [fetchFeed]);
-
-  // Handle Live RSS Refresh
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
       await fetch('/api/refresh-feeds', { method: 'POST' });
-      // Short delay then reload data
       setTimeout(() => {
         fetchFeed();
         fetchAuxData();
         setIsRefreshing(false);
       }, 2500);
     } catch (err) {
-      console.error('Refresh error:', err);
       setIsRefreshing(false);
     }
   };
 
-  // Handle Bookmarks Toggle
   const handleBookmarkToggle = async (articleId, currentlyBookmarked) => {
-    const eventType = currentlyBookmarked ? 'unbookmark' : 'bookmark';
     try {
       await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          article_id: articleId,
-          event_type: eventType
-        })
+        body: JSON.stringify({ article_id: articleId, event_type: currentlyBookmarked ? 'unbookmark' : 'bookmark' })
       });
-
-      setArticles(prev => prev.map(a => 
+      setArticles(prev => prev.map(a =>
         a.id === articleId ? { ...a, is_bookmarked: !currentlyBookmarked } : a
       ));
-
       setStats(prev => prev ? {
         ...prev,
         saved_count: currentlyBookmarked ? Math.max(0, prev.saved_count - 1) : prev.saved_count + 1
       } : prev);
-    } catch (err) {
-      console.error('Bookmark error:', err);
-    }
+    } catch (err) { console.error(err); }
   };
 
-  // Handle "Less like this" / dislike
   const handleDislike = async (articleId) => {
     try {
       await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          article_id: articleId,
-          event_type: 'dislike'
-        })
+        body: JSON.stringify({ article_id: articleId, event_type: 'dislike' })
       });
-      // Remove from active feed immediately
       setArticles(prev => prev.filter(a => a.id !== articleId));
-    } catch (err) {
-      console.error('Dislike error:', err);
-    }
+    } catch (err) { console.error(err); }
   };
 
-  // Handle FeedRec Dwell Time / Click logging
   const handleDwellFeedback = async (articleId, dwellSeconds, eventType = 'dwell') => {
     try {
       await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          article_id: articleId,
-          event_type: eventType,
-          dwell_seconds: dwellSeconds
-        })
+        body: JSON.stringify({ article_id: articleId, event_type: eventType, dwell_seconds: dwellSeconds })
       });
-    } catch (err) {
-      console.error('Feedback error:', err);
-    }
+    } catch (err) { console.error(err); }
   };
 
-  // Filter ArXiv papers for sidebar spotlight
-  const arxivPapers = articles.filter(a => a.source_name.includes('ArXiv'));
+  // Assign layout roles: first = hero, every 5th = wide, rest = normal
+  const getCardVariant = (index) => {
+    if (index === 0) return 'hero';
+    if (index === 3 || index === 7) return 'wide';
+    return 'normal';
+  };
+
+  const arxivPapers = articles.filter(a => a.source_name?.includes('ArXiv'));
+  const recentForSidebar = articles.slice(0, 6);
+
+  const feedLabel = isBookmarkedView
+    ? 'Saved Library'
+    : activeClockMode === 'morning' ? 'Morning Radar'
+    : activeClockMode === 'afternoon' ? 'Deep Lab'
+    : activeClockMode === 'night' ? 'Night Horizon'
+    : 'For You';
 
   return (
     <div className="app-container">
@@ -178,47 +153,39 @@ export default function App() {
         isRefreshing={isRefreshing}
         onRefresh={handleRefresh}
         isBookmarkedView={isBookmarkedView}
-        setIsBookmarkedView={setIsBookmarkedView}
+        setIsBookmarkedView={(v) => { setIsBookmarkedView(v); if (!v) setSearchTerm(''); }}
         darkMode={darkMode}
         setDarkMode={setDarkMode}
         savedCount={stats?.saved_count || 0}
+        activeCategory={activeCategory}
+        setActiveCategory={setActiveCategory}
       />
 
       <main className="main-content">
+        {/* ── Feed Column ── */}
         <div className="feed-column">
-          {/* Interest Clock Banner */}
           {!isBookmarkedView && (
             <InterestClockBanner
               clockStatus={clockStatus}
               activeMode={activeClockMode}
-              onSelectMode={(modeKey) => setActiveClockMode(modeKey)}
+              onSelectMode={setActiveClockMode}
             />
           )}
 
-          {/* Bookmarked view title or Category filter tabs */}
-          {isBookmarkedView ? (
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              marginBottom: '20px',
-              padding: '12px 18px',
-              background: 'var(--bg-card)',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border-subtle)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Bookmark size={20} color="var(--primary)" fill="currentColor" />
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Saved Knowledge Library</h2>
-              </div>
-              <button
-                className="action-btn"
-                onClick={() => setIsBookmarkedView(false)}
-              >
-                Back to Live Feed
-              </button>
-            </div>
-          ) : (
+          {/* Section header (BreakN style) */}
+          <div className="section-header">
+            <h1 className="section-title">
+              {isBookmarkedView ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Bookmark size={28} fill="currentColor" />
+                  Saved Library
+                </span>
+              ) : feedLabel}
+            </h1>
+            <span className="section-count">{articles.length} summaries</span>
+          </div>
+
+          {!isBookmarkedView && (
             <div className="filter-tabs">
               {CATEGORIES.map(cat => (
                 <button
@@ -232,68 +199,65 @@ export default function App() {
             </div>
           )}
 
-          {/* Active Entity Tag Filter Notification */}
-          {selectedEntity && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '8px 14px',
-              marginBottom: '16px',
-              background: 'var(--primary-light)',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
-              color: 'var(--primary)',
-              fontWeight: 600
-            }}>
-              <span>Filtered by concept: #{selectedEntity}</span>
-              <button 
-                onClick={() => setSelectedEntity(null)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 700 }}
-              >
-                Clear ✕
+          {isBookmarkedView && (
+            <div className="bookmarks-header" style={{ gridColumn: '1/-1' }}>
+              <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+                {articles.length} articles saved for study & reference
+              </span>
+              <button className="action-btn" onClick={() => setIsBookmarkedView(false)}>
+                ← Back to Feed
               </button>
             </div>
           )}
 
-          {/* Articles Feed */}
+          {selectedEntity && (
+            <div className="filter-active-bar">
+              <span>Filtered by: #{selectedEntity}</span>
+              <button className="filter-clear-btn" onClick={() => setSelectedEntity(null)}>✕ Clear</button>
+            </div>
+          )}
+
+          {/* Editorial Grid Feed */}
           {loading ? (
             <div className="loading-box">
               <div className="spinner" />
-              <p>Curating high-signal Tech & AI summaries...</p>
+              <p style={{ fontWeight: 600 }}>Curating Tech & AI summaries…</p>
             </div>
           ) : articles.length === 0 ? (
             <div className="empty-state">
-              <AlertCircle size={32} style={{ margin: '0 auto 12px', opacity: 0.6 }} />
-              <h3>No articles found</h3>
-              <p style={{ marginTop: '6px', fontSize: '0.88rem' }}>
-                {isBookmarkedView 
-                  ? "You haven't saved any summaries yet. Click the bookmark icon on any card to save it."
-                  : "Try clearing your search term or concept filters."
-                }
+              <AlertCircle size={28} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
+              <h3 style={{ fontWeight: 700, marginBottom: 6 }}>Nothing here yet</h3>
+              <p style={{ fontSize: '0.86rem' }}>
+                {isBookmarkedView
+                  ? "Save articles while reading to build your knowledge library."
+                  : "Try clearing your filters or syncing new feeds."}
               </p>
             </div>
           ) : (
-            articles.map(article => (
-              <ArticleCard
-                key={article.id}
-                article={article}
-                onEntityClick={(entity) => setSelectedEntity(entity)}
-                onBookmarkToggle={handleBookmarkToggle}
-                onDislike={handleDislike}
-                onDwellFeedback={handleDwellFeedback}
-              />
-            ))
+            <div className="editorial-grid">
+              {articles.map((article, index) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  variant={getCardVariant(index)}
+                  onEntityClick={(entity) => setSelectedEntity(entity)}
+                  onBookmarkToggle={handleBookmarkToggle}
+                  onDislike={handleDislike}
+                  onDwellFeedback={handleDwellFeedback}
+                />
+              ))}
+            </div>
           )}
         </div>
 
-        {/* Sticky Sidebar */}
+        {/* ── Sidebar ── */}
         <div className="sidebar-column">
           <TrendingSidebar
             trendingEntities={trendingEntities}
             selectedEntity={selectedEntity}
-            onSelectEntity={(entity) => setSelectedEntity(entity)}
+            onSelectEntity={(entity) => setSelectedEntity(entity === selectedEntity ? null : entity)}
             stats={stats}
+            recentArticles={recentForSidebar}
             arxivPapers={arxivPapers}
           />
         </div>
