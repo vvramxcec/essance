@@ -12,7 +12,12 @@ from rss_service import fetch_and_sync_feeds
 from recommender import get_current_time_mode, rank_articles_for_student
 from config import TIME_MODES
 
-app = FastAPI(title="Essence API", description="AI Tech & AI Feed for Students")
+app = FastAPI(
+    title="Essence API",
+    description="AI Tech & AI Feed for Students",
+    docs_url="/api/docs",
+    openapi_url="/api/openapi.json"
+)
 
 # Allow CORS for development
 app.add_middleware(

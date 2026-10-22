@@ -1,4 +1,5 @@
 import os
+import shutil
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -7,7 +8,20 @@ load_dotenv(BASE_DIR / ".env")
 
 # Gemini API Key (optional, fallback heuristic summarizer active if not set)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-DATABASE_PATH = BASE_DIR / "essence.db"
+
+db_env = os.getenv("DATABASE_PATH")
+if db_env:
+    DATABASE_PATH = Path(db_env)
+elif os.getenv("VERCEL"):
+    DATABASE_PATH = Path("/tmp/essence.db")
+    source_db = BASE_DIR / "essence.db"
+    if source_db.exists() and not DATABASE_PATH.exists():
+        try:
+            shutil.copy2(source_db, DATABASE_PATH)
+        except Exception:
+            pass
+else:
+    DATABASE_PATH = BASE_DIR / "essence.db"
 
 # Real RSS Feeds covering Tech, AI & Academic Breakthroughs
 RSS_FEEDS = [
