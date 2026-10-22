@@ -1,0 +1,8 @@
+{
+  "name": "Essence — AI Tech & Research Feed for Students",
+  "description": "High-signal Tech & AI summaries designed for low cognitive load and rapid learning with Interest Clock adaptive curation.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

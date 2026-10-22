@@ -1,7 +1,26 @@
 import React from 'react';
 import { Sparkles, Search, Bookmark, RefreshCw, Moon, Sun } from 'lucide-react';
+import { UserAccount } from '../types';
+import UserMenu from './UserMenu';
 
-const CATEGORIES = ["All", "Research", "Industry", "Deep Tech", "Tech News"];
+const CATEGORIES = ['All', 'Research', 'Industry', 'Deep Tech', 'Tech News'];
+
+interface NavbarProps {
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  isRefreshing: boolean;
+  onRefresh: () => void;
+  isBookmarkedView: boolean;
+  setIsBookmarkedView: (val: boolean) => void;
+  darkMode: boolean;
+  setDarkMode: (val: boolean) => void;
+  savedCount: number;
+  activeCategory: string;
+  setActiveCategory: (cat: string) => void;
+  currentUser: UserAccount | null;
+  onOpenAuthModal: (mode: 'signin' | 'register' | 'profile') => void;
+  onSignOut: () => void;
+}
 
 export default function Navbar({
   searchTerm,
@@ -14,15 +33,21 @@ export default function Navbar({
   setDarkMode,
   savedCount,
   activeCategory,
-  setActiveCategory
-}) {
+  setActiveCategory,
+  currentUser,
+  onOpenAuthModal,
+  onSignOut
+}: NavbarProps) {
   return (
     <header className="navbar">
       <div className="nav-wrapper">
         {/* Brand */}
         <div
           className="brand-section"
-          onClick={() => { setIsBookmarkedView(false); setSearchTerm(''); }}
+          onClick={() => {
+            setIsBookmarkedView(false);
+            setSearchTerm('');
+          }}
         >
           <div className="brand-logo">
             <Sparkles size={17} />
@@ -37,11 +62,14 @@ export default function Navbar({
 
         {/* Center: Editorial tabs (BreakN-style nav) */}
         <nav className="nav-tabs">
-          {CATEGORIES.map(cat => (
+          {CATEGORIES.map((cat) => (
             <button
               key={cat}
               className={`nav-tab ${!isBookmarkedView && activeCategory === cat ? 'active' : ''}`}
-              onClick={() => { setActiveCategory(cat); setIsBookmarkedView(false); }}
+              onClick={() => {
+                setActiveCategory(cat);
+                setIsBookmarkedView(false);
+              }}
             >
               {cat}
             </button>
@@ -66,15 +94,25 @@ export default function Navbar({
             onClick={() => setIsBookmarkedView(!isBookmarkedView)}
             style={{ position: 'relative', color: isBookmarkedView ? 'var(--primary)' : undefined }}
           >
-            <Bookmark size={17} fill={isBookmarkedView ? "currentColor" : "none"} />
+            <Bookmark size={17} fill={isBookmarkedView ? 'currentColor' : 'none'} />
             {savedCount > 0 && (
-              <span style={{
-                position: 'absolute', top: -4, right: -4,
-                background: 'var(--primary)', color: 'white',
-                fontSize: '0.6rem', fontWeight: 800,
-                width: 16, height: 16, borderRadius: '50%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
+              <span
+                style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -4,
+                  background: 'var(--primary)',
+                  color: 'white',
+                  fontSize: '0.6rem',
+                  fontWeight: 800,
+                  width: 16,
+                  height: 16,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
                 {savedCount}
               </span>
             )}
@@ -86,8 +124,11 @@ export default function Navbar({
             disabled={isRefreshing}
             title="Sync RSS feeds"
           >
-            <RefreshCw size={14} style={isRefreshing ? { animation: 'spin 0.8s linear infinite' } : {}} />
-            {isRefreshing ? 'Syncing…' : 'Sync'}
+            <RefreshCw
+              size={14}
+              style={isRefreshing ? { animation: 'spin 0.8s linear infinite' } : {}}
+            />
+            <span className="btn-sync-text">{isRefreshing ? 'Syncing…' : 'Sync'}</span>
           </button>
 
           <button
@@ -97,6 +138,15 @@ export default function Navbar({
           >
             {darkMode ? <Sun size={16} /> : <Moon size={16} />}
           </button>
+
+          {/* User Account / Auth Section */}
+          <UserMenu
+            currentUser={currentUser}
+            onOpenModal={onOpenAuthModal}
+            onViewSaved={() => setIsBookmarkedView(true)}
+            isBookmarkedView={isBookmarkedView}
+            onSignOut={onSignOut}
+          />
         </div>
       </div>
     </header>

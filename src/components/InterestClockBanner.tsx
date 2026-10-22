@@ -1,20 +1,28 @@
 import React from 'react';
-import { Sunrise, Cpu, Moon, Clock } from 'lucide-react';
+import { Sunrise, Cpu, Moon, Clock, LucideIcon } from 'lucide-react';
+import { ClockStatus, TimeModeKey } from '../types';
 
-const iconMap = {
-  Sunrise: Sunrise,
-  Cpu: Cpu,
-  Moon: Moon
+interface InterestClockBannerProps {
+  clockStatus: ClockStatus | null;
+  activeMode: TimeModeKey | null;
+  onSelectMode: (mode: TimeModeKey) => void;
+}
+
+const iconMap: Record<string, LucideIcon> = {
+  Sunrise,
+  Cpu,
+  Moon
 };
 
 export default function InterestClockBanner({
   clockStatus,
   activeMode,
   onSelectMode
-}) {
+}: InterestClockBannerProps) {
   if (!clockStatus || !clockStatus.current_mode) return null;
 
-  const currentModeInfo = clockStatus.available_modes.find(m => m.key === activeMode) || clockStatus.current_mode;
+  const currentModeInfo =
+    clockStatus.available_modes.find((m) => m.key === activeMode) || clockStatus.current_mode;
   const CurrentIcon = iconMap[currentModeInfo.icon] || Clock;
 
   return (
