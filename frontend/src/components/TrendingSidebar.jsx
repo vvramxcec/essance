@@ -1,15 +1,5 @@
 import React from 'react';
 import { TrendingUp, BookOpen, Brain, Zap, Hash, ExternalLink } from 'lucide-react';
-import { Article, DigestStats, TrendingEntity } from '../types';
-
-interface TrendingSidebarProps {
-  trendingEntities: TrendingEntity[];
-  selectedEntity: string | null;
-  onSelectEntity: (entity: string | null) => void;
-  stats: DigestStats | null;
-  recentArticles: Article[];
-  arxivPapers: Article[];
-}
 
 export default function TrendingSidebar({
   trendingEntities,
@@ -18,9 +8,10 @@ export default function TrendingSidebar({
   stats,
   recentArticles,
   arxivPapers
-}: TrendingSidebarProps) {
+}) {
   return (
     <aside className="sidebar-wrapper">
+
       {/* ── Cognitive Impact Stats (Discover sidebar widget style) ── */}
       <div className="sidebar-box">
         <h4 className="sidebar-title">
@@ -29,33 +20,28 @@ export default function TrendingSidebar({
         </h4>
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-number">{stats?.total_articles ?? 10}</div>
+            <div className="stat-number">{stats?.total_articles || 40}</div>
             <div className="stat-label">Summaries</div>
           </div>
           <div className="stat-card">
-            <div className="stat-number">{stats?.saved_count ?? 0}</div>
+            <div className="stat-number">{stats?.saved_count || 0}</div>
             <div className="stat-label">Saved</div>
           </div>
         </div>
-        <p
-          style={{
-            fontSize: '0.72rem',
-            color: 'var(--text-muted)',
-            marginTop: 12,
-            lineHeight: 1.5
-          }}
-        >
-          ≈{' '}
-          <strong style={{ color: 'var(--text-main)' }}>
-            {stats?.estimated_reading_minutes_saved ?? Math.round((stats?.total_articles || 10) * 4.2)}
-            min
-          </strong>{' '}
-          of reading distilled into bite-sized essences.
+        <p style={{
+          fontSize: '0.72rem',
+          color: 'var(--text-muted)',
+          marginTop: 12,
+          lineHeight: 1.5
+        }}>
+          ≈ <strong style={{ color: 'var(--text-main)' }}>
+            {Math.round((stats?.total_articles || 40) * 4.2)}min
+          </strong> of reading distilled into bite-sized essences.
         </p>
       </div>
 
       {/* ── Recent Articles (Discover right-panel list style) ── */}
-      {recentArticles && recentArticles.length > 0 && (
+      {recentArticles?.length > 0 && (
         <div className="sidebar-box">
           <h4 className="sidebar-title">
             <BookOpen size={14} color="var(--primary)" />
@@ -104,15 +90,11 @@ export default function TrendingSidebar({
               key={idx}
               className="concept-tag"
               onClick={() => onSelectEntity(item.name)}
-              style={
-                selectedEntity === item.name
-                  ? {
-                      background: 'var(--primary)',
-                      color: 'white',
-                      borderColor: 'var(--primary)'
-                    }
-                  : {}
-              }
+              style={selectedEntity === item.name ? {
+                background: 'var(--primary)',
+                color: 'white',
+                borderColor: 'var(--primary)'
+              } : {}}
             >
               <Hash size={10} />
               {item.name}
@@ -123,7 +105,7 @@ export default function TrendingSidebar({
       </div>
 
       {/* ── ArXiv Research Spotlight ── */}
-      {arxivPapers && arxivPapers.length > 0 && (
+      {arxivPapers?.length > 0 && (
         <div className="sidebar-box">
           <h4 className="sidebar-title">
             <Brain size={14} color="var(--accent-purple)" />
@@ -143,41 +125,35 @@ export default function TrendingSidebar({
                   alignItems: 'flex-start'
                 }}
               >
-                <div
-                  style={{
-                    width: 3,
-                    flexShrink: 0,
-                    alignSelf: 'stretch',
-                    borderRadius: 2,
-                    background: 'var(--card-arxiv-fg)',
-                    minHeight: 36
-                  }}
-                />
+                <div style={{
+                  width: 3,
+                  flexShrink: 0,
+                  alignSelf: 'stretch',
+                  borderRadius: 2,
+                  background: 'var(--card-arxiv-fg)',
+                  minHeight: 36
+                }} />
                 <div>
-                  <span
-                    style={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      color: 'var(--text-main)',
-                      lineHeight: 1.35
-                    }}
-                  >
+                  <span style={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    color: 'var(--text-main)',
+                    lineHeight: 1.35
+                  }}>
                     {paper.title}
                   </span>
-                  <div
-                    style={{
-                      fontSize: '0.66rem',
-                      color: 'var(--text-muted)',
-                      marginTop: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4
-                    }}
-                  >
+                  <div style={{
+                    fontSize: '0.66rem',
+                    color: 'var(--text-muted)',
+                    marginTop: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}>
                     {paper.read_time_seconds || 45}s read
                     <ExternalLink size={10} />
                   </div>
